@@ -13,24 +13,20 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Log in to Azure
       - name: Log in to Azure
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          auth-type: 'SERVICE_PRINCIPAL'
+          auth-type: "oidc"
 
-      # Step 3: Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'BookmarkGenieApp' # Replace with your Azure App Service name
-          slot-name: 'production' # Replace if using deployment slots (optional)
+          app-name: 'BookmarkGenieApp'
+          slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_CLIENT_SECRET }}
