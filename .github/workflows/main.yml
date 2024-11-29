@@ -22,6 +22,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'BookmarkGenieApp' # Ensure this matches your App Service name exactly
+          app-name: 'BookmarkGenieApp'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
