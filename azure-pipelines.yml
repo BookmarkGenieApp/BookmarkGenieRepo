@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: BookmarkGenieSelfHosted
 
 steps:
 - script: echo Hello, world!
