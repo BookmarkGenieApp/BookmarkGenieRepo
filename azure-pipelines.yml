@@ -2,7 +2,7 @@ trigger:
   - main
 
 pool:
-  name: BookmarkGenieSelfHosted
+  name: Azure Pipelines
 
 steps:
   - script: echo "Hello from agent!"
