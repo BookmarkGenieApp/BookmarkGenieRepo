@@ -5,5 +5,5 @@ pool:
   name: BookmarkGenieSelfHosted
 
 steps:
-  - script: echo "Hello from agent!"
-    displayName: 'Test Agent'
+  - script: echo "Hello, Oli-New is online!"
+    displayName: 'Test Self-Hosted Agent'
