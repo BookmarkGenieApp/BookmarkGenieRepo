@@ -5,7 +5,8 @@ import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        urls = req.get_json(force=True)
+        data = req.get_json()
+        urls = data.get("urls", [])
         results = []
 
         for url in urls:
