@@ -5,9 +5,19 @@ import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        data = req.get_json()
+        # Add debugging wrapper to surface input
+        try:
+            data = req.get_json()
+            logging.info(f"Received payload: {data}")
+        except Exception as parse_err:
+            logging.error(f"JSON parse error: {str(parse_err)}")
+            return func.HttpResponse(
+                f"Bad Request: {str(parse_err)}",
+                status_code=400
+            )
+
         urls = data.get("urls", [])
-        results = []
+        logging.info(f"Extracted URLs: {urls}")
 
         for url in urls:
             try:
