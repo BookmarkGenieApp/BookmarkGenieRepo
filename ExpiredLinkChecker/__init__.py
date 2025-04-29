@@ -2,20 +2,29 @@ import logging
 try:
     import requests
 except ImportError as e:
-    import logging
     logging.error(f"FAILED TO IMPORT requests: {str(e)}")
     raise
+
 import azure.functions as func
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        data = req.get_json()
-        logging.info(f"Received payload: {data}")
+        # Add debugging wrapper to surface input
+        try:
+            data = req.get_json()
+            logging.info(f"Received payload: {data}")
+        except Exception as parse_err:
+            logging.error(f"JSON parse error: {str(parse_err)}")
+            return func.HttpResponse(
+                f"Bad Request: {str(parse_err)}",
+                status_code=400
+            )
+
         urls = data.get("urls", [])
         logging.info(f"Extracted URLs: {urls}")
 
-        results = []  # 👈 THIS LINE fixes the bug
+        results = []  # ✅ This line was missing
 
         for url in urls:
             try:
