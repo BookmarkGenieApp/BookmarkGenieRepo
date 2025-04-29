@@ -1,5 +1,10 @@
 import logging
-import requests
+try:
+    import requests
+except ImportError as e:
+    import logging
+    logging.error(f"FAILED TO IMPORT requests: {str(e)}")
+    raise
 import azure.functions as func
 import json
 
