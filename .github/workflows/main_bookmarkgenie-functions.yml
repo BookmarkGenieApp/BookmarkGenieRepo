@@ -13,11 +13,12 @@ on:
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
   PYTHON_VERSION: '3.11' # set this to the python version to use (supports 3.6, 3.7, 3.8)
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Checkout repository
@@ -28,8 +29,15 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+
       - name: Install dependencies
-        run: pip install -r requirements.txt -t .
+        run: pip install -r requirements.txt
+
+      # Optional: Add step to run tests here
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -40,6 +48,7 @@ jobs:
           name: python-app
           path: |
             release.zip
+            !venv/
 
   deploy:
     runs-on: ubuntu-latest
@@ -60,9 +69,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0FC0E8DC51294BF98EE23EDD07B257DC }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BFE24AACE1A24C0DB8BF30C384F43A76 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B981DC4CC193434B93DB5A354C58F285 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0CBC0D27BC3348EB8F54ECFCC76F17F1 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8425FD64E0C64FBC909A267EFB2E1812 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E0AA820B659C489187C0B808F9AB743A }}
 
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
