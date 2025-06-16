@@ -1,16 +1,10 @@
 import logging
-try:
-    import requests
-except ImportError as e:
-    logging.error(f"FAILED TO IMPORT requests: {str(e)}")
-    raise
-
+import requests
 import azure.functions as func
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        # Add debugging wrapper to surface input
         try:
             data = req.get_json()
             logging.info(f"Received payload: {data}")
@@ -18,40 +12,40 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             logging.error(f"JSON parse error: {str(parse_err)}")
             return func.HttpResponse(
                 f"Bad Request: {str(parse_err)}",
-                _code=400
+                status_code=400
             )
 
         urls = data.get("urls", [])
         logging.info(f"Extracted URLs: {urls}")
 
-        results = []  # ✅ This line was missing
+        results = []
 
         for url in urls:
             try:
                 response = requests.head(url, timeout=5)
-                if response._code == 200:
-                    status = "Active"
+                if response.status_code == 200:
+                    expired_flag = False
                 elif response.status_code in [404, 410] or 500 <= response.status_code < 600:
-                    status = "Expired"
+                    expired_flag = True
                 else:
-                    status = "Unknown"
+                    expired_flag = ""
             except Exception as e:
                 logging.warning(f"Error checking URL {url}: {str(e)}")
-                 = "Unreachable"
+                expired_flag = ""
 
             results.append({
                 "url": url,
-                "expired_link": 
+                "expired_link": expired_flag
             })
 
         return func.HttpResponse(
             json.dumps(results),
-            _code=200,
+            status_code=200,
             mimetype="application/json"
         )
     except Exception as e:
         logging.error(f"Top-level error: {str(e)}")
         return func.HttpResponse(
             "Internal Server Error",
-            _code=500
+            status_code=500
         )
