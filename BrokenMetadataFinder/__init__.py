@@ -22,7 +22,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 reasons.append("Empty or placeholder description")
 
             bm.update({
-                "broken_meta_flag": "Yes" if reasons else "No",
+                "broken_metadata": "Yes" if reasons else "No",
                 "reason": "; ".join(reasons) if reasons else "Title and description are valid"
             })
             results.append(bm)
