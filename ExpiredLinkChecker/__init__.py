@@ -18,7 +18,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             logging.error(f"JSON parse error: {str(parse_err)}")
             return func.HttpResponse(
                 f"Bad Request: {str(parse_err)}",
-                status_code=400
+                _code=400
             )
 
         urls = data.get("urls", [])
@@ -29,7 +29,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         for url in urls:
             try:
                 response = requests.head(url, timeout=5)
-                if response.status_code == 200:
+                if response._code == 200:
                     status = "Active"
                 elif response.status_code in [404, 410] or 500 <= response.status_code < 600:
                     status = "Expired"
@@ -37,21 +37,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     status = "Unknown"
             except Exception as e:
                 logging.warning(f"Error checking URL {url}: {str(e)}")
-                status = "Unreachable"
+                 = "Unreachable"
 
             results.append({
                 "url": url,
-                "status": status
+                "expired_link": 
             })
 
         return func.HttpResponse(
             json.dumps(results),
-            status_code=200,
+            _code=200,
             mimetype="application/json"
         )
     except Exception as e:
         logging.error(f"Top-level error: {str(e)}")
         return func.HttpResponse(
             "Internal Server Error",
-            status_code=500
+            _code=500
         )
