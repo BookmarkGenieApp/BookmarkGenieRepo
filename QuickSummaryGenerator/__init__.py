@@ -33,7 +33,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             description = bm.get("description", "") or ""
             summary, reason = generate_summary(title, description)
             bm.update({
-                "quick_summary": summary,
+                "one_line_summary": summary,
                 "reason": reason
             })
             results.append(bm)
