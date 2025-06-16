@@ -36,7 +36,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 reason.append("Generic domain")
 
             bm.update({
-                "forgotten_flag": "Yes" if forgotten else "No",
+                "forgotten_score": "Yes" if forgotten else "No",
                 "reason": "; ".join(reason) if reason else "Recent and descriptive",
                 "days_old": days_old
             })
