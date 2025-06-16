@@ -48,7 +48,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 flag = (idx == min_index)
 
                 item.update({
-                    "odd_one_out": "Yes" if flag else "No",
+                    "outlier": "Yes" if flag else "No",
                     "outlier_score": round(float(sim_score), 3),
                     "reason": "Least similar to others" if flag else "Similar to others"
                 })
