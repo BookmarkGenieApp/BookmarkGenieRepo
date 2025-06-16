@@ -32,7 +32,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             title = bm.get("title", "") or ""
             suggestion, reason = generate_suggestion(title)
             bm.update({
-                "newer_source_suggestion": suggestion,
+                "updated_source": suggestion,
                 "reason": reason if suggestion else "No outdated indicators"
             })
             results.append(bm)
