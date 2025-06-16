@@ -14,7 +14,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         titles = [bm.get("title", "") for bm in bookmarks]
         if not titles or len(titles) < 2:
             for bm in bookmarks:
-                bm["similar_group"] = "None"
+                bm["cluster_group"] = "None"
             return func.HttpResponse(json.dumps({"results": bookmarks}), mimetype="application/json")
 
         vectorizer = TfidfVectorizer(stop_words='english')
@@ -26,7 +26,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         labels = clustering.fit_predict(distance_matrix)
 
         for bm, label in zip(bookmarks, labels):
-            bm["similar_group"] = f"Group {label}" if label != -1 else "None"
+            bm["cluster_group"] = f"Group {label}" if label != -1 else "None"
 
         return func.HttpResponse(
             json.dumps({"results": bookmarks}),
