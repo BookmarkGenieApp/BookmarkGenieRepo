@@ -35,7 +35,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             folder = bm.get("folder_name", "Unknown")
             smarter_name = suggestions.get(folder)
             bm.update({
-                "smarter_folder_name": smarter_name or "",
+                "smarter_folder": smarter_name or "",
                 "reason": "Based on bookmark content" if smarter_name else "No suggestion"
             })
 
