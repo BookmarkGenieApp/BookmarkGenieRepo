@@ -23,7 +23,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             folder = bm.get("folder_name", "Unknown")
             count = folder_counts[folder]
             heat_level, icon = assign_heat(count)
-            bm["folder_heat_level"] = heat_level
+            bm["folder_load_score"] = heat_level
             bm["reason"] = f"{icon} Folder '{folder}' has {count} bookmarks"
 
         return func.HttpResponse(
