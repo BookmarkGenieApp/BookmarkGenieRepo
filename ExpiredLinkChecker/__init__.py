@@ -28,10 +28,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 elif response.status_code in [404, 410] or 500 <= response.status_code < 600:
                     expired_flag = True
                 else:
-                    expired_flag = ""
+                    expired_flag = True  # treat unknown status as expired
             except Exception as e:
                 logging.warning(f"Error checking URL {url}: {str(e)}")
-                expired_flag = ""
+                expired_flag = True  # assume expired if HEAD fails
 
             results.append({
                 "url": url,
@@ -39,7 +39,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             })
 
         return func.HttpResponse(
-            json.dumps(results),
+            json.dumps({
+                "results": results,
+                "success": True
+            }),
             status_code=200,
             mimetype="application/json"
         )
