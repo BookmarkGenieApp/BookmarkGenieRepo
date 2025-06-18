@@ -32,6 +32,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             except Exception as e:
                 logging.warning(f"Error checking URL {url}: {str(e)}")
                 expired_flag = True  # assume expired if HEAD fails
+                
+            logging.info(f"Azure returning for {url}: expired_link = {expired_flag}")
 
             results.append({
                 "url": url,
