@@ -20,7 +20,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         results = []
 
-        for url in urls:
+        for entry in urls:
+            url = entry.get("url")
             try:
                 response = requests.head(url, timeout=5)
                 if response.status_code == 200:
