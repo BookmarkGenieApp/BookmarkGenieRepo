@@ -22,16 +22,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         results = []
         for folder, items in folder_groups.items():
-            texts = [item["text"] for item in items]
-
-            if len(texts) < 3:
+            try:
+                ...
+            except Exception as e:
+                logging.warning(f"[OutlierFinder] Folder '{folder}' processing failed: {str(e)}")
                 for item in items:
                     item.update({
-                        "odd_one_out": "No",
-                        "outlier_score": 1.0,
-                        "reason": "Not enough data to evaluate"
+                        "outlier": "No",
+                        "outlier_score": 0.0,
+                        "reason": f"Folder error: {str(e)}"
                     })
-                    del item["text"]
                     results.append(item)
                 continue
 
@@ -53,6 +53,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     "reason": "Least similar to others" if flag else "Similar to others"
                 })
                 del item["text"]
+
+                # ✅ Insert logging here
+                logging.info(
+                    f"[OutlierFinder] Bookmark='{item.get('title', 'Untitled')}', "
+                    f"Outlier={item['outlier']}, Score={item['outlier_score']}, Folder='{folder}'"
+                )
+                
                 results.append(item)
 
         return func.HttpResponse(
