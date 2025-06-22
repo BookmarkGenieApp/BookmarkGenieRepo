@@ -41,9 +41,29 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             "reason": "Not enough valid content to compute similarity"
                         })
                         results.append(item)
-                    continue  # ✅ SKIP the rest of try block
+                    continue  
+
+                 # ✅ Move this block inside the try
+                vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+                tfidf_matrix = vectorizer.fit_transform(texts).toarray()
+                pairwise_sim = cosine_similarity(tfidf_matrix)
+                avg_similarities = pairwise_sim.mean(axis=1)
+                min_index = int(np.argmin(avg_similarities))
         
-                # ... rest of actual analysis logic here ...
+                for idx, item in enumerate(items):
+                    sim_score = avg_similarities[idx]
+                    flag = (idx == min_index)
+                    item.update({
+                        "outlier": "Yes" if flag else "No",
+                        "outlier_score": round(float(sim_score), 3),
+                        "reason": "Least similar to others" if flag else "Similar to others"
+                    })
+                    del item["text"]
+                    logging.info(
+                        f"[OutlierFinder] Bookmark='{item.get('title', 'Untitled')}', "
+                        f"Outlier={item['outlier']}, Score={item['outlier_score']}, Folder='{folder}'"
+                    )
+                    results.append(item)
         
             except Exception as e:
                 logging.warning(f"[OutlierFinder] Folder '{folder}' processing failed: {str(e)}")
@@ -55,26 +75,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     })
                     results.append(item)
                 continue
-                
-            vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
-            tfidf_matrix = vectorizer.fit_transform(texts).toarray()
-            pairwise_sim = cosine_similarity(tfidf_matrix)
-            avg_similarities = pairwise_sim.mean(axis=1)
-
-            # Find the index of the lowest average similarity
-            min_index = int(np.argmin(avg_similarities))
-
-            for idx, item in enumerate(items):
-                sim_score = avg_similarities[idx]
-                flag = (idx == min_index)
-
-                item.update({
-                    "outlier": "Yes" if flag else "No",
-                    "outlier_score": round(float(sim_score), 3),
-                    "reason": "Least similar to others" if flag else "Similar to others"
-                })
-                del item["text"]
-
+          
                 # ✅ Insert logging here
                 logging.info(
                     f"[OutlierFinder] Bookmark='{item.get('title', 'Untitled')}', "
