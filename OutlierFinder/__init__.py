@@ -23,7 +23,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         results = []
         for folder, items in folder_groups.items():
             try:
-                ...
+                texts = [item["text"] for item in items if item.get("text") and "error" not in item["text"].lower()]
+                if len(texts) < 3:
+                    logging.warning(f"[OutlierFinder] Not enough valid texts in folder '{folder}' to perform analysis.")
+                    for item in items:
+                        item.update({
+                            "outlier": "",
+                            "outlier_score": 0.0,
+                            "reason": "Not enough valid content to compute similarity"
+                        })
+                        results.append(item)
+                    continue  # ✅ SKIP the rest of try block
+        
+                # ... rest of actual analysis logic here ...
+        
             except Exception as e:
                 logging.warning(f"[OutlierFinder] Folder '{folder}' processing failed: {str(e)}")
                 for item in items:
@@ -34,7 +47,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     })
                     results.append(item)
                 continue
-
+                
             vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
             tfidf_matrix = vectorizer.fit_transform(texts).toarray()
             pairwise_sim = cosine_similarity(tfidf_matrix)
