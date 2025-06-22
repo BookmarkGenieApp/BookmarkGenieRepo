@@ -23,6 +23,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         results = []
         for folder, items in folder_groups.items():
             try:
+                # Ensure 'text' field exists in each item
+                for item in items:
+                    item["text"] = (
+                        item.get("title", "") + " " +
+                        item.get("description", "") + " " +
+                        item.get("url_content", "")
+                    ).strip()
+
                 texts = [item["text"] for item in items if item.get("text") and "error" not in item["text"].lower()]
                 if len(texts) < 3:
                     logging.warning(f"[OutlierFinder] Not enough valid texts in folder '{folder}' to perform analysis.")
