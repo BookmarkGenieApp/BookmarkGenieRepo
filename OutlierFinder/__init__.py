@@ -43,7 +43,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         results.append(item)
                     continue  
 
-                 # ✅ Move this block inside the try
+                # ✅ Move this block inside the try
                 vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
                 tfidf_matrix = vectorizer.fit_transform(texts).toarray()
                 pairwise_sim = cosine_similarity(tfidf_matrix)
@@ -75,15 +75,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     })
                     results.append(item)
                 continue
-          
-                # ✅ Insert logging here
-                logging.info(
-                    f"[OutlierFinder] Bookmark='{item.get('title', 'Untitled')}', "
-                    f"Outlier={item['outlier']}, Score={item['outlier_score']}, Folder='{folder}'"
-                )
-                
-                results.append(item)
-
+                  
         return func.HttpResponse(
             json.dumps({"results": results}, ensure_ascii=False),
             mimetype="application/json",
