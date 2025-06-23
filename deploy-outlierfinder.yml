@@ -25,8 +25,12 @@ jobs:
 
       - name: 📦 Install dependencies
         run: |
+          echo "🔍 Upgrading pip..."
           python -m pip install --upgrade pip
+          echo "📦 Installing from requirements.txt..."
           pip install -r requirements.txt
+          echo "🔎 Verifying numpy installation..."
+          pip show numpy || echo "❌ numpy not found"
 
       - name: 🚀 Deploy to Azure Functions
         uses: Azure/functions-action@v1
