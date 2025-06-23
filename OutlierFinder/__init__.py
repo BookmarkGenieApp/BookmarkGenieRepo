@@ -20,6 +20,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         results = []
         for folder, items in folder_groups.items():
+            logging.info(f"[OutlierFinder] Processing folder: {folder} with {len(items)} items")
             texts = []
             for item in items:
                 try:
@@ -32,6 +33,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     item["text"] = ""
 
             texts = [item["text"] for item in items if item.get("text") and "error" not in item["text"].lower()]
+            logging.info(f"[OutlierFinder] Valid text count: {len(texts)}")
 
             if len(texts) < 3:
                 logging.warning(f"[OutlierFinder] Folder '{folder}' has insufficient valid texts.")
@@ -47,9 +49,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
                 tfidf_matrix = vectorizer.fit_transform(texts).toarray()
+                logging.info(f"[OutlierFinder] TF-IDF matrix shape: {tfidf_matrix.shape}")
                 pairwise_sim = cosine_similarity(tfidf_matrix)
                 avg_similarities = pairwise_sim.mean(axis=1)
+                logging.info(f"[OutlierFinder] Avg similarities: {avg_similarities.tolist()}")
                 min_index = int(np.argmin(avg_similarities))
+                logging.info(f"[OutlierFinder] Minimum index: {min_index}")
 
                 for idx, item in enumerate(items):
                     sim_score = avg_similarities[idx] if idx < len(avg_similarities) else 0.0
@@ -73,7 +78,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     results.append(item)
 
         return func.HttpResponse(
-            json.dumps({"results": results}),
+            json.dumps({"results": results}, ensure_ascii=False),
             mimetype="application/json",
             status_code=200
         )
