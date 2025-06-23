@@ -15,22 +15,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4  # optional: upgrade to v4
+      - name: 🧾 Checkout code
+        uses: actions/checkout@v4
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      - name: 📦 Install dependencies
-        run: |
-          echo "🔍 Upgrading pip..."
-          python -m pip install --upgrade pip
-          echo "📦 Installing from requirements.txt..."
-          pip install -r requirements.txt
-          echo "🔎 Verifying numpy installation..."
-          pip show numpy || echo "❌ numpy not found"
 
       - name: 🚀 Deploy to Azure Functions
         uses: Azure/functions-action@v1
