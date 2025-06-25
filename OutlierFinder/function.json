@@ -1,14 +1,11 @@
 {
-  "scriptFile": "__init__.py",
-  "entryPoint": "main",
   "bindings": [
     {
       "authLevel": "function",
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": ["post"],
-      "route": "OutlierFinder"
+      "methods": ["post"]
     },
     {
       "type": "http",
