@@ -1,4 +1,2 @@
 requests
 azure-functions
-numpy
-scikit-learn
