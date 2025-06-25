@@ -1,11 +1,12 @@
-name: Deploy OutlierFinder to Azure Functions
+name: Deploy All Functions to Azure
 
 on:
   push:
     paths:
-      - 'OutlierFinder/**'
+      - '**/__init__.py'
+      - '**/function.json'
       - 'requirements.txt'
-      - '.github/workflows/deploy-outlierfinder.yml'
+      - '.github/workflows/deploy-functions.yml'
     branches:
       - main
   workflow_dispatch:
@@ -13,21 +14,24 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      FUNCTIONS_WORKER_RUNTIME: python
+      SCM_DO_BUILD_DURING_DEPLOYMENT: true
 
     steps:
-      - name: 🧾 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
-    
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # Match Azure's host Python version
-    
+          python-version: '3.11'
+
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-    
+
       - name: 🚀 Deploy to Azure Functions
         uses: Azure/functions-action@v1
         with:
