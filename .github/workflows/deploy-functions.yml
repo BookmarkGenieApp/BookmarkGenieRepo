@@ -38,3 +38,4 @@ jobs:
           app-name: bookmarkgenie-functions
           package: '.'
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+# Trigger redeploy Tue Jul  1 13:33:13 CEST 2025
