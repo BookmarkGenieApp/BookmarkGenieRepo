@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: Deploy All Functions to Azure
 
 on:
@@ -40,3 +41,6 @@ jobs:
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
 # Trigger redeploy Tue Jul  1 13:33:13 CEST 2025
 # Re-run after Python downgrade
+=======
+# Trigger redeploy after reconnect Tue Jul  1 14:48:13 CEST 2025
+>>>>>>> Trigger redeploy after reconnect
