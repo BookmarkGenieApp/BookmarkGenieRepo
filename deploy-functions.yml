@@ -38,3 +38,4 @@ jobs:
           app-name: bookmarkgenie-functions
           package: './BookmarkGenieApp'
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          
