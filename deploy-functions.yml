@@ -31,13 +31,15 @@ jobs:
           which python
           python --version
           pip --version
-
+          
+      - name: Override Python version globally
+        run: echo "python=$(which python3.10)" >> $GITHUB_ENV
+        
       - name: Install dependencies
         run: |
           python3.10 -m pip install --upgrade pip setuptools wheel build
           python3.10 -m pip install --prefer-binary --only-binary=:all: -r requirements.txt
-          pip install --prefer-binary --only-binary=:all: -r requirements.txt
-
+          
       - name: Freeze dependencies to local path
         run: |
           mkdir -p ./python_packages/lib/site-packages
