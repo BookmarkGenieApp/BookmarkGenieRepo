@@ -54,9 +54,13 @@ jobs:
           mkdir -p ./python_packages/lib/site-packages
           python3.10 -m pip install --target=./python_packages/lib/site-packages -r requirements.txt   
 
-      - name: Deploy to Azure Functions
+      - name: Zip deployment package (includes python_packages)
+        run: |
+          zip -r deploy.zip . -x "*.git*" ".github/*" "tests/*"
+
+      - name: Deploy to Azure Functions via ZIP
         uses: Azure/functions-action@v1
         with:
           app-name: bookmarkgenie-functions
-          package: '.'
+          package: deploy.zip
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
