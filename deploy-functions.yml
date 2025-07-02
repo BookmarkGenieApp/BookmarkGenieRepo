@@ -1,4 +1,24 @@
-name: Deploy All Functions to Azure
+name: Build and deploy Python project to Azure Function App - bookmarkgenie-functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.py'
+      - '**/function.json'
+      - 'requirements.txt'
+      - '.github/workflows/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    env:
+      PATH: /opt/hostedtoolcache/Python/3.10.13/x64/bin:${PATH}
 
 defaults:
   run:
