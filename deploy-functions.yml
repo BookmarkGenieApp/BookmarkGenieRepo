@@ -30,20 +30,15 @@ jobs:
           sudo ln -sf $(which python3.10) /usr/bin/python
           sudo ln -sf $(which pip3.10) /usr/bin/pip
 
-      - name: Force override Python globally
+      - name: Force Python override + confirm
         run: |
+          sudo ln -sf $(which python3.10) /usr/bin/python
+          sudo ln -sf $(which pip3.10) /usr/bin/pip
           echo "python=$(which python3.10)" >> $GITHUB_ENV
           echo "/opt/hostedtoolcache/Python/3.10.13/x64/bin" >> $GITHUB_PATH
           which python
           python --version
           pip --version
-          
-      - name: Confirm enforced Python context
-        run: |
-          python --version
-          pip --version
-          which python
-          which pip
           
       - name: Install dependencies
         run: |
