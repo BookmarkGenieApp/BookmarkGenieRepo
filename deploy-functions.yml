@@ -49,6 +49,10 @@ jobs:
         run: |
           python -m pip install setuptools==68.2.2
 
+      - name: DEBUG – Dry-run pip resolution plan
+        run: |
+          python -m pip install --no-build-isolation --only-binary=:all: -r requirements.txt --dry-run -v
+
       - name: Install dependencies (no build isolation)
         run: |
           python -m pip install --prefer-binary --no-build-isolation --only-binary=:all: -r requirements.txt
