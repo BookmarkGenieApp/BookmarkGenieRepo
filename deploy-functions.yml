@@ -31,6 +31,11 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install --prefer-binary -r requirements.txt
 
+      - name: Freeze dependencies to local path
+        run: |
+          mkdir -p ./python_packages/lib/site-packages
+          pip install --target=./python_packages/lib/site-packages -r requirements.txt         
+
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
         with:
