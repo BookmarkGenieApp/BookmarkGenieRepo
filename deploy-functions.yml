@@ -2,38 +2,12 @@ name: Build and deploy Python project to Azure Function App - bookmarkgenie-func
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - '**.py'
       - '**/function.json'
       - 'requirements.txt'
       - '.github/workflows/**'
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: .
-    env:
-      PATH: /opt/hostedtoolcache/Python/3.10.13/x64/bin:${PATH}
-
-defaults:
-  run:
-    shell: bash
-    python: python3.10
-
-on:
-  push:
-    paths:
-      - '**/__init__.py'
-      - '**/function.json'
-      - 'requirements.txt'
-      - '.github/workflows/deploy-functions.yml'
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -51,28 +25,23 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Override default Python path
+      - name: Force override Python globally
         run: |
+          echo "python=$(which python3.10)" >> $GITHUB_ENV
           echo "/opt/hostedtoolcache/Python/3.10.13/x64/bin" >> $GITHUB_PATH
-
-      - name: Verify Python version
-        run: |
           which python
           python --version
           pip --version
-          
-      - name: Override Python version globally
-        run: echo "python=$(which python3.10)" >> $GITHUB_ENV
-        
+
       - name: Install dependencies
         run: |
-          python3.10 -m pip install --upgrade pip setuptools wheel build
-          python3.10 -m pip install --prefer-binary --only-binary=:all: -r requirements.txt
-          
+          python -m pip install --upgrade pip setuptools wheel build
+          python -m pip install --prefer-binary --only-binary=:all: -r requirements.txt
+
       - name: Freeze dependencies to local path
         run: |
           mkdir -p ./python_packages/lib/site-packages
-          python3.10 -m pip install --target=./python_packages/lib/site-packages -r requirements.txt   
+          python -m pip install --target=./python_packages/lib/site-packages -r requirements.txt   
 
       - name: Zip deployment package (includes python_packages)
         run: |
