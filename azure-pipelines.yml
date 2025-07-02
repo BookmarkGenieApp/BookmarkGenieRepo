@@ -1,9 +1,0 @@
-trigger:
-  - main
-
-pool:
-  name: BMGenieSH
-
-steps:
-  - script: echo "Hello, Oli-New is online!"
-    displayName: 'Test Self-Hosted Agent'
