@@ -52,7 +52,7 @@ jobs:
       - name: Freeze dependencies to local path
         run: |
           mkdir -p ./python_packages/lib/site-packages
-          pip install --target=./python_packages/lib/site-packages -r requirements.txt         
+          python3.10 -m pip install --target=./python_packages/lib/site-packages -r requirements.txt   
 
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
