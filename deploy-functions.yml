@@ -30,25 +30,33 @@ jobs:
           sudo ln -sf $(which python3.10) /usr/bin/python
           sudo ln -sf $(which pip3.10) /usr/bin/pip
 
-      - name: Force Python override + confirm
+      - name: Force override Python globally
         run: |
-          sudo ln -sf $(which python3.10) /usr/bin/python
-          sudo ln -sf $(which pip3.10) /usr/bin/pip
           echo "python=$(which python3.10)" >> $GITHUB_ENV
           echo "/opt/hostedtoolcache/Python/3.10.13/x64/bin" >> $GITHUB_PATH
           which python
           python --version
           pip --version
-          
-      - name: Install dependencies
+
+      - name: Confirm enforced Python context
         run: |
-          python -m pip install --upgrade pip setuptools wheel build
-          python -m pip install --prefer-binary --only-binary=:all: -r requirements.txt
+          python --version
+          pip --version
+          which python
+          which pip
+
+      - name: Preinstall stable setuptools
+        run: |
+          python -m pip install setuptools==68.2.2
+
+      - name: Install dependencies (no build isolation)
+        run: |
+          python -m pip install --prefer-binary --no-build-isolation --only-binary=:all: -r requirements.txt
 
       - name: Freeze dependencies to local path
         run: |
           mkdir -p ./python_packages/lib/site-packages
-          python -m pip install --target=./python_packages/lib/site-packages -r requirements.txt   
+          python -m pip install --target=./python_packages/lib/site-packages -r requirements.txt
 
       - name: Zip deployment package (includes python_packages)
         run: |
