@@ -21,21 +21,24 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         results = []
 
         for entry in urls:
-            url = entry.get("url")
+            url = entry.get("url", "").strip()
+            expired_flag = True  # Default to True in case of any error
+
             try:
                 response = requests.head(url, timeout=5)
-                if response.status_code == 200:
+                status = response.status_code
+                if status == 200:
                     expired_flag = False
-                elif response.status_code in [404, 410] or 500 <= response.status_code < 600:
+                elif status in [404, 410] or 500 <= status < 600:
                     expired_flag = True
                 else:
-                    expired_flag = True  # treat unknown status as expired
+                    expired_flag = True  # Treat unknown status as expired
+            except requests.exceptions.RequestException as e:
+                logging.warning(f"[ExpiredLinkChecker] Request failed for {url}: {e}")
             except Exception as e:
-                logging.warning(f"Error checking URL {url}: {str(e)}")
-                expired_flag = True  # assume expired if HEAD fails
-                
-            logging.info(f"Azure returning for {url}: expired_link = {expired_flag}")
+                logging.warning(f"[ExpiredLinkChecker] Unexpected error for {url}: {e}")
 
+            logging.info(f"[ExpiredLinkChecker] Result for {url} → expired_link = {expired_flag}")
             results.append({
                 "url": url,
                 "expired_link": expired_flag
