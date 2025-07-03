@@ -1,6 +1,6 @@
 requests==2.31.0
 beautifulsoup4==4.12.3
-lxml==4.6.5 --only-binary :all:
+lxml==5.3.2 --only-binary :all:
 tldextract==3.4.0
 spacy==3.7.2
 
