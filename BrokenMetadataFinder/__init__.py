@@ -6,6 +6,7 @@ GENERIC_TITLES = {"untitled", "new tab", "n/a", "example", "test", ""}
 GENERIC_DESCRIPTIONS = {"", "n/a", "no description", "lorem ipsum", "...", "none"}
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("✅ BrokenMetadataFinder function started")
     try:
         data = req.get_json()
         bookmarks = data.get("bookmarks", [])
