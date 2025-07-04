@@ -15,7 +15,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        urls = data.get("urls", [])
+        urls = data.get("urls") or data.get("bookmarks") or []
         logging.info(f"Extracted URLs: {urls}")
 
         results = []
