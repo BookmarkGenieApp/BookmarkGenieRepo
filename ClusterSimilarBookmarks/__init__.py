@@ -1,10 +1,11 @@
 import sys
-sys.path.append('/usr/local/lib/python3.10/site-packages')  # 👈 Ensures Azure can find installed packages
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python_packages"))
 
 import logging
 import azure.functions as func
 import json
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import DBSCAN
