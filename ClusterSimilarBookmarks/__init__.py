@@ -3,6 +3,7 @@ import os
 
 # Add the correct path to your local python_packages folder
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python_packages"))
+print("PYTHONPATH:", sys.path)  # 🔍 DEBUG: Confirm correct resolution
 
 import logging
 import azure.functions as func
