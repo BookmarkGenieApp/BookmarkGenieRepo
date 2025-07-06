@@ -1,9 +1,14 @@
 import sys
 import os
 
-# Add the correct path to your local python_packages folder
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python_packages"))
-print("PYTHONPATH:", sys.path)  # 🔍 DEBUG: Confirm correct resolution
+# Add local package directory first
+local_pkg_path = os.path.join(os.path.dirname(__file__), "python_packages")
+sys.path.insert(0, local_pkg_path)
+
+# Debug output to confirm it worked
+print("DEBUG: sys.path =", sys.path)
+print("DEBUG: local_pkg_path exists:", os.path.exists(local_pkg_path))
+print("DEBUG: sklearn path exists:", os.path.exists(os.path.join(local_pkg_path, "sklearn")))
 
 import logging
 import azure.functions as func
