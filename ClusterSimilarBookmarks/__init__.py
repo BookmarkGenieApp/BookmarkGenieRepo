@@ -1,11 +1,13 @@
 import sys
 import os
 
+# Add the correct path to your local python_packages folder
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python_packages"))
 
 import logging
 import azure.functions as func
 import json
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import DBSCAN
