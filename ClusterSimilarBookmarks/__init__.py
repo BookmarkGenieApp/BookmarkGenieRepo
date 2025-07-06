@@ -1,16 +1,16 @@
 import sys
 import os
+import logging  # Moved up to enable early logging
 
 # Add local package directory first
 local_pkg_path = os.path.join(os.path.dirname(__file__), "python_packages")
 sys.path.insert(0, local_pkg_path)
 
-# Debug output to confirm it worked
-print("DEBUG: sys.path =", sys.path)
-print("DEBUG: local_pkg_path exists:", os.path.exists(local_pkg_path))
-print("DEBUG: sklearn path exists:", os.path.exists(os.path.join(local_pkg_path, "sklearn")))
+# Use logging to ensure messages show up in Azure logs
+logging.info(f"DEBUG: sys.path = {sys.path}")
+logging.info(f"DEBUG: local_pkg_path exists: {os.path.exists(local_pkg_path)}")
+logging.info(f"DEBUG: sklearn path exists: {os.path.exists(os.path.join(local_pkg_path, 'sklearn'))}")
 
-import logging
 import azure.functions as func
 import json
 
