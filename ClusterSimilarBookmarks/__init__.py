@@ -2,9 +2,10 @@ import logging
 import azure.functions as func
 from typing import List, Dict
 import json
+import re
 
 def tokenize(text: str) -> set:
-    return set(word.lower() for word in text.split())
+    return set(re.findall(r"\b\w{3,}\b", text.lower()))
 
 def jaccard_similarity(set1: set, set2: set) -> float:
     intersection = set1 & set2
@@ -56,7 +57,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json"
             )
 
-        clusters = cluster_bookmarks(bookmarks)
+        clusters = cluster_bookmarks(bookmarks, threshold=0.2)
         result = format_response(clusters)
 
         return func.HttpResponse(
