@@ -2,17 +2,13 @@ import logging
 import azure.functions as func
 import json
 
-# Define generic or placeholder indicators
 GENERIC_TITLES = {"new tab", "untitled", "example page", "homepage", "home", "index", "default"}
 GENERIC_DESCRIPTIONS = {"n/a", "none", "no description", "", "...", "lorem ipsum"}
 
 
 def is_generic_text(text, generic_set):
     text = text.strip().lower()
-    return any(
-        text == g or text.startswith(g) or g in text
-        for g in generic_set
-    )
+    return any(text == g or text.startswith(g) or g in text for g in generic_set)
 
 
 def evaluate_metadata(bookmark):
@@ -41,7 +37,9 @@ def evaluate_metadata(bookmark):
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         req_body = req.get_json()
-        bookmarks = req_body.get("bookmarks", [])
+        bookmarks = req_body.get("bookmarks") or req_body.get("urls") or []
+
+        logging.info(f"Received {len(bookmarks)} items")
 
         results = []
         for bm in bookmarks:
