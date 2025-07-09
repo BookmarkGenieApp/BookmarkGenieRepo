@@ -36,10 +36,18 @@ def evaluate_metadata(bookmark):
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        req_body = req.get_json()
-        bookmarks = req_body.get("bookmarks") or req_body.get("urls") or []
+        try:
+            req_body = req.get_json()
+        except Exception as e:
+            logging.error(f"Failed to parse JSON: {str(e)}")
+            req_body = {}
 
-        logging.info(f"Received {len(bookmarks)} items")
+        if not isinstance(req_body, dict):
+            logging.error("Parsed JSON is not a dictionary.")
+            req_body = {}
+
+        bookmarks = req_body.get("bookmarks") or req_body.get("urls") or []
+        logging.info(f"✅ Received {len(bookmarks)} bookmarks")
 
         results = []
         for bm in bookmarks:
@@ -57,7 +65,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     except Exception as e:
-        logging.exception("Error in BrokenMetadataFinder")
+        logging.exception("💥 Error in BrokenMetadataFinder")
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
