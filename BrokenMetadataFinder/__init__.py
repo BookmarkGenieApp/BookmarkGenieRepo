@@ -59,7 +59,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             results.append(bm)
 
         return func.HttpResponse(
-            json.dumps({"results": results}, ensure_ascii=False),
+            body='{"status": "Azure Response OK"}',
             mimetype="application/json",
             status_code=200
         )
