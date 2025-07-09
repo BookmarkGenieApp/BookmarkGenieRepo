@@ -4,45 +4,48 @@ import json
 import re
 
 def clean_text(text):
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+    return re.sub(r'\s+', ' ', text).strip()
 
 def generate_summary(title, description):
     if description and len(description.split()) <= 20:
-        return clean_text(description), "Used description"
+        return clean_text(description), "📝 Used description"
     elif title and description:
         title_words = title.split()
         desc_words = description.split()
         combined = title_words[:5] + desc_words[:5]
-        return clean_text(" ".join(combined)), "Used title and description"
+        return clean_text(" ".join(combined)), "🧠 Used title and description"
     elif title:
-        return clean_text(title), "Used title"
+        return clean_text(title), "🔤 Used title"
     elif description:
-        return clean_text(description), "Used description"
+        return clean_text(description), "📝 Used description"
     else:
-        return "", "No summary available"
+        return "⛔ MISSING", "⚠️ No title or description available"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
-        bookmarks = data.get("bookmarks", [])
-        results = []
+        bookmarks = data.get("bookmarks") or data.get("urls") or []
+
+        if not bookmarks:
+            return func.HttpResponse(
+                json.dumps({"error": "No bookmarks or URLs provided."}),
+                mimetype="application/json",
+                status_code=400
+            )
 
         for bm in bookmarks:
-            title = bm.get("title", "") or ""
-            description = bm.get("description", "") or ""
+            title = bm.get("title", "")
+            description = bm.get("description", "")
             summary, reason = generate_summary(title, description)
-            bm.update({
-                "one_line_summary": summary,
-                "reason": reason
-            })
-            results.append(bm)
+            bm["one_line_summary"] = summary
+            bm["one_line_summary_reason"] = reason
 
         return func.HttpResponse(
-            json.dumps({"results": results}),
+            json.dumps({"results": bookmarks}),
             mimetype="application/json",
             status_code=200
         )
+
     except Exception as e:
         logging.exception("Error in QuickSummaryGenerator")
         return func.HttpResponse(
