@@ -1,60 +1,70 @@
 import logging
-import requests
 import azure.functions as func
 import json
+import http.client
+import urllib.parse
+
+
+def normalize_url(url):
+    if url and not url.startswith("http"):
+        return "https://" + url
+    return url
+
+
+def check_url_status(url):
+    url = normalize_url(url)
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        conn = http.client.HTTPSConnection(parsed_url.netloc, timeout=5)
+        path = parsed_url.path or "/"
+        if parsed_url.query:
+            path += "?" + parsed_url.query
+
+        conn.request("HEAD", path)
+        response = conn.getresponse()
+        status = response.status
+        is_expired = status in {404, 410} or 500 <= status < 600
+        return is_expired, status
+    except Exception:
+        return True, None
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        try:
-            data = req.get_json()
-            logging.info(f"Received payload: {data}")
-        except Exception as parse_err:
-            logging.error(f"JSON parse error: {str(parse_err)}")
-            return func.HttpResponse(
-                f"Bad Request: {str(parse_err)}",
-                status_code=400
-            )
-
-        urls = data.get("urls") or data.get("bookmarks") or []
-        logging.info(f"Extracted URLs: {urls}")
+        data = req.get_json()
+        input_items = data.get("bookmarks") or data.get("urls") or []
 
         results = []
+        for item in input_items:
+            url = item.get("url") if isinstance(item, dict) else item
+            if not url:
+                continue
 
-        for entry in urls:
-            url = entry.get("url", "").strip()
-            expired_flag = True  # Default to True in case of any error
-
-            try:
-                response = requests.head(url, timeout=5)
-                status = response.status_code
-                if status == 200:
-                    expired_flag = False
-                elif status in [404, 410] or 500 <= status < 600:
-                    expired_flag = True
-                else:
-                    expired_flag = True  # Treat unknown status as expired
-            except requests.exceptions.RequestException as e:
-                logging.warning(f"[ExpiredLinkChecker] Request failed for {url}: {e}")
-            except Exception as e:
-                logging.warning(f"[ExpiredLinkChecker] Unexpected error for {url}: {e}")
-
-            logging.info(f"[ExpiredLinkChecker] Result for {url} → expired_link = {expired_flag}")
-            results.append({
+            expired, status = check_url_status(url)
+            result = {
                 "url": url,
-                "expired_link": expired_flag
-            })
+                "expired_link": expired,
+                "status_code": status
+            }
+
+            if isinstance(item, dict):
+                result.update({
+                    "title": item.get("title", ""),
+                    "folder_name": item.get("folder_name", "")
+                })
+
+            results.append(result)
 
         return func.HttpResponse(
-            json.dumps({
-                "results": results,
-                "success": True
-            }),
-            status_code=200,
-            mimetype="application/json"
+            json.dumps({"results": results}, ensure_ascii=False),
+            mimetype="application/json",
+            status_code=200
         )
+
     except Exception as e:
-        logging.error(f"Top-level error: {str(e)}")
+        logging.exception("Error in ExpiredLinkChecker")
         return func.HttpResponse(
-            "Internal Server Error",
+            json.dumps({"error": str(e)}),
+            mimetype="application/json",
             status_code=500
         )
