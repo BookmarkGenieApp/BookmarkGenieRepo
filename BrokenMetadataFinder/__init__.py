@@ -2,13 +2,17 @@ import logging
 import azure.functions as func
 import json
 
+# Define generic or placeholder indicators
 GENERIC_TITLES = {"new tab", "untitled", "example page", "homepage", "home", "index", "default"}
 GENERIC_DESCRIPTIONS = {"n/a", "none", "no description", "", "...", "lorem ipsum"}
 
 
 def is_generic_text(text, generic_set):
     text = text.strip().lower()
-    return any(text == g or text.startswith(g) or g in text for g in generic_set)
+    return any(
+        text == g or text.startswith(g) or g in text
+        for g in generic_set
+    )
 
 
 def evaluate_metadata(bookmark):
@@ -36,18 +40,8 @@ def evaluate_metadata(bookmark):
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        try:
-            req_body = req.get_json()
-        except Exception as e:
-            logging.error(f"Failed to parse JSON: {str(e)}")
-            req_body = {}
-
-        if not isinstance(req_body, dict):
-            logging.error("Parsed JSON is not a dictionary.")
-            req_body = {}
-
+        req_body = req.get_json()
         bookmarks = req_body.get("bookmarks") or req_body.get("urls") or []
-        logging.info(f"✅ Received {len(bookmarks)} bookmarks")
 
         results = []
         for bm in bookmarks:
@@ -65,7 +59,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     except Exception as e:
-        logging.exception("💥 Error in BrokenMetadataFinder")
+        logging.exception("Error in BrokenMetadataFinder")
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
