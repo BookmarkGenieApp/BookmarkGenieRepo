@@ -57,7 +57,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json"
             )
 
-        clusters = cluster_bookmarks(bookmarks, threshold=0.2)
+        clusters = cluster_bookmarks(bookmarks, threshold=0.15)
         result = format_response(clusters)
 
         return func.HttpResponse(
