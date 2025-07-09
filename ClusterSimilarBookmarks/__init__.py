@@ -1,55 +1,74 @@
-import sys
-import os
-import logging  # Moved up to enable early logging
-
-# Add local package directory first
-local_pkg_path = os.path.join(os.path.dirname(__file__), "python_packages")
-sys.path.insert(0, local_pkg_path)
-
-# Use logging to ensure messages show up in Azure logs
-logging.info(f"DEBUG: sys.path = {sys.path}")
-logging.info(f"DEBUG: local_pkg_path exists: {os.path.exists(local_pkg_path)}")
-logging.info(f"DEBUG: sklearn path exists: {os.path.exists(os.path.join(local_pkg_path, 'sklearn'))}")
-
+import logging
 import azure.functions as func
+from typing import List, Dict
 import json
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.cluster import DBSCAN
-import numpy as np
+def tokenize(text: str) -> set:
+    return set(word.lower() for word in text.split())
+
+def jaccard_similarity(set1: set, set2: set) -> float:
+    intersection = set1 & set2
+    union = set1 | set2
+    return len(intersection) / len(union) if union else 0.0
+
+def cluster_bookmarks(bookmarks: List[Dict], threshold: float = 0.5) -> List[List[Dict]]:
+    clusters = []
+    for bookmark in bookmarks:
+        content = bookmark.get("url_content", "")
+        token_set = tokenize(content)
+        placed = False
+
+        for cluster in clusters:
+            rep = cluster[0]  # Use the first bookmark in the cluster as representative
+            rep_tokens = tokenize(rep.get("url_content", ""))
+            similarity = jaccard_similarity(token_set, rep_tokens)
+
+            if similarity >= threshold:
+                cluster.append(bookmark)
+                placed = True
+                break
+
+        if not placed:
+            clusters.append([bookmark])
+
+    return clusters
+
+def format_response(clusters: List[List[Dict]]) -> List[Dict]:
+    response = []
+    for idx, cluster in enumerate(clusters):
+        for bm in cluster:
+            bm_copy = bm.copy()
+            bm_copy["cluster_id"] = f"Group {idx + 1}"
+            response.append(bm_copy)
+    return response
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Processing request for ClusterSimilarBookmarks.")
+
     try:
         data = req.get_json()
-        bookmarks = data.get("bookmarks", [])
+        bookmarks = data.get("bookmarks") or data.get("urls") or []
 
-        titles = [bm.get("title", "") for bm in bookmarks]
-        if not titles or len(titles) < 2:
-            for bm in bookmarks:
-                bm["cluster_group"] = "None"
-            return func.HttpResponse(json.dumps({"results": bookmarks}), mimetype="application/json")
+        if not bookmarks or not isinstance(bookmarks, list):
+            return func.HttpResponse(
+                json.dumps({"error": "No valid bookmark list provided."}),
+                status_code=400,
+                mimetype="application/json"
+            )
 
-        vectorizer = TfidfVectorizer(stop_words='english')
-        X = vectorizer.fit_transform(titles)
-        similarity_matrix = cosine_similarity(X)
-
-        clustering = DBSCAN(eps=0.3, min_samples=2, metric='precomputed')
-        distance_matrix = 1 - similarity_matrix
-        labels = clustering.fit_predict(distance_matrix)
-
-        for bm, label in zip(bookmarks, labels):
-            bm["cluster_group"] = f"Group {label}" if label != -1 else "None"
+        clusters = cluster_bookmarks(bookmarks)
+        result = format_response(clusters)
 
         return func.HttpResponse(
-            json.dumps({"results": bookmarks}),
-            mimetype="application/json",
-            status_code=200
+            json.dumps({"success": True, "results": result}),
+            status_code=200,
+            mimetype="application/json"
         )
+
     except Exception as e:
-        logging.exception("Error in ClusterSimilarBookmarks")
+        logging.error(f"Error in ClusterSimilarBookmarks: {e}")
         return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            mimetype="application/json",
-            status_code=500
+            json.dumps({"error": str(e), "success": False}),
+            status_code=500,
+            mimetype="application/json"
         )
