@@ -6,14 +6,20 @@ from datetime import datetime
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
-        bookmarks = data.get("bookmarks", [])
-        results = []
+        bookmarks = data.get("bookmarks") or data.get("urls") or []
+
+        if not bookmarks:
+            return func.HttpResponse(
+                json.dumps({"error": "No bookmarks or URLs provided."}),
+                mimetype="application/json",
+                status_code=400
+            )
 
         for bm in bookmarks:
-            date_str = bm.get("date_added", "")
+            date_str = bm.get("date_added") or ""
             reason = []
-            days_old = None
             forgotten = False
+            days_old = "⛔ MISSING"
 
             if date_str:
                 try:
@@ -22,28 +28,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     days_old = delta
                     if delta > 365:
                         forgotten = True
-                        reason.append("Added over 1 year ago")
+                        reason.append("📅 Added over 1 year ago")
                 except Exception:
-                    reason.append("Invalid date format")
+                    reason.append("⚠️ Invalid date format")
+            else:
+                reason.append("⛔ No date provided")
 
             if not bm.get("description"):
                 forgotten = True
-                reason.append("No description")
+                reason.append("📝 No description")
 
-            domain = bm.get("url", "").split("/")[2] if "url" in bm and "//" in bm.get("url", "") else ""
+            url = bm.get("url", "")
+            domain = url.split("/")[2] if "//" in url else "⛔ MISSING"
             if domain in ["localhost", "example.com"]:
                 forgotten = True
-                reason.append("Generic domain")
+                reason.append("🌐 Generic domain")
 
-            bm.update({
-                "forgotten_score": "Yes" if forgotten else "No",
-                "reason": "; ".join(reason) if reason else "Recent and descriptive",
-                "days_old": days_old
-            })
-            results.append(bm)
+            bm["forgotten_score"] = "Yes" if forgotten else "No"
+            bm["forgotten_score_reason"] = "; ".join(reason) if reason else "✅ Recent and descriptive"
+            bm["days_old"] = days_old
 
         return func.HttpResponse(
-            json.dumps({"results": results}),
+            json.dumps({"results": bookmarks}),
             mimetype="application/json",
             status_code=200
         )
