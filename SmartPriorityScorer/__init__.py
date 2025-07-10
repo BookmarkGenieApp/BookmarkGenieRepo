@@ -24,6 +24,12 @@ KEYWORD_WEIGHTS = {
 PRIORITY_FOLDERS = ["work", "research", "projects", "admin"]
 ARCHIVE_FOLDERS = ["archived", "old", "misc"]
 
+PRIORITY_LABELS = [
+    (50, "🔥 High"),
+    (10, "⚠️ Medium"),
+    (0,  "🧊 Low")
+]
+
 def keyword_score(title, description):
     text = f"{title} {description}".lower()
     score = 0
@@ -53,7 +59,13 @@ def recency_score(date_str):
         else:
             return 0, "Moderately old"
     except:
-        return 0, "Invalid or missing date"
+        return 0, None  # Suppress irrelevant reason
+
+def label_priority(score):
+    for threshold, label in PRIORITY_LABELS:
+        if score >= threshold:
+            return label
+    return "🧊 Low"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -85,7 +97,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             total_score = max(0, min(100, total_score))
 
-            bm["priority_score"] = total_score
+            bm["priority_score"] = label_priority(total_score)
             bm["priority_score_reason"] = "; ".join(reasons) or "No strong signals"
 
         return func.HttpResponse(
