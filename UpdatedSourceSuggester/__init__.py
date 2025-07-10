@@ -14,7 +14,7 @@ def generate_suggestion(title):
         outdated = [int(y) for y in years if int(y) < current_year - 2]
         if outdated:
             latest_year = max(outdated)
-            suggestion = title.replace(str(latest_year), str(current_year))
+            suggestion = re.sub(rf'\b{latest_year}\b', str(current_year), title)
             return f"Try searching for '{suggestion}'", f"📅 Title mentions outdated year ({latest_year})"
     if "python 2" in title.lower():
         return "Try searching for 'Python 3 tutorial'", "🐍 Mentions deprecated version"
