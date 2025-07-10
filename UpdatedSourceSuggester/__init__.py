@@ -9,7 +9,7 @@ def extract_years(text):
 
 def generate_suggestion(title):
     current_year = datetime.now().year
-    years = re.findall(r"(19|20)\d{2}", title)
+    years = re.findall(r"\b(19\d{2}|20\d{2})\b", title)
     if years:
         outdated = [int(y) for y in years if int(y) < current_year - 2]
         if outdated:
