@@ -37,11 +37,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             title = bm.get("title", "")
             description = bm.get("description", "")
             summary, reason = generate_summary(title, description)
-            bm["one_line_summary"] = summary
-            bm["one_line_summary_reason"] = reason
+            bm["quick_summary"] = summary
+            bm["quick_summary_reason"] = reason
+            if "one_line_summary" in bm:
+                del bm["one_line_summary"]
+            if "one_line_summary_reason" in bm:
+                del bm["one_line_summary_reason"]
 
         return func.HttpResponse(
-            json.dumps({"results": bookmarks}),
+            json.dumps({"results": bookmarks}, ensure_ascii=False),
             mimetype="application/json",
             status_code=200
         )
