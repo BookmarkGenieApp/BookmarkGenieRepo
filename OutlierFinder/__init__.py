@@ -79,11 +79,10 @@ def find_outlier(items):
     logging.info(f"Minimum score index: {min_index}")
     return min_index, avg_scores
 
-
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         req_body = req.get_json()
-        bookmarks = req_body.get("bookmarks", [])
+        bookmarks = req_body.get("bookmarks") or req_body.get("urls") or []
 
         folder_groups = defaultdict(list)
         for item in bookmarks:
@@ -99,23 +98,24 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             if len(items) < 3:
                 for item in items:
                     item.update({
-                        "odd_one_out": "No",
-                        "outlier_score": 1.0,
-                        "reason": "Not enough data to evaluate"
+                        "outlier_score": "✅ Normal",
+                        "outlier_score_reason": "Not enough data to evaluate"
                     })
-                    del item["text"]
+                    item.pop("text", None)
                     results.append(item)
                 continue
 
             min_index, scores = find_outlier(items)
 
             for idx, item in enumerate(items):
+                score_label = "🌠 Outlier" if idx == min_index else "✅ Normal"
+                reason_label = "Least similar to others" if idx == min_index else "Similar to others"
+
                 item.update({
-                    "odd_one_out": "Yes" if idx == min_index else "No",
-                    "outlier_score": round(scores[idx], 3),
-                    "reason": "Least similar to others" if idx == min_index else "Similar to others"
+                    "outlier_score": score_label,
+                    "outlier_score_reason": reason_label
                 })
-                del item["text"]
+                item.pop("text", None)
                 results.append(item)
 
         return func.HttpResponse(
@@ -125,7 +125,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     except Exception as e:
-        logging.exception("Error in OutlierFinder pure Python version")
+        logging.exception("Error in OutlierFinder post-processing")
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
