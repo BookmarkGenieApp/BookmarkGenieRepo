@@ -18,7 +18,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         for bm in bookmarks:
             date_str = bm.get("date_added") or ""
             reason = []
-            forgotten = False
+            score_label = "✅ Recently Added"
             days_old = "⛔ MISSING"
 
             if date_str:
@@ -26,25 +26,33 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     added_date = datetime.strptime(date_str, "%Y-%m-%d")
                     delta = (datetime.utcnow() - added_date).days
                     days_old = delta
-                    if delta > 365:
-                        forgotten = True
-                        reason.append("📅 Added over 1 year ago")
+
+                    if delta > 365 * 10:
+                        score_label = "🕸️ Extremely Forgotten"
+                        reason.append("📅 Added over 10 years ago")
+                    elif delta > 365 * 5:
+                        score_label = "⏳ Likely Forgotten"
+                        reason.append("📅 Added over 5 years ago")
+                    elif delta > 365 * 2:
+                        score_label = "🧐 Possibly Forgotten"
+                        reason.append("📅 Added over 2 years ago")
+                    else:
+                        reason.append("📅 Added within 2 years")
+
                 except Exception:
                     reason.append("⚠️ Invalid date format")
             else:
                 reason.append("⛔ No date provided")
 
             if not bm.get("description"):
-                forgotten = True
                 reason.append("📝 No description")
 
             url = bm.get("url", "")
             domain = url.split("/")[2] if "//" in url else "⛔ MISSING"
             if domain in ["localhost", "example.com"]:
-                forgotten = True
                 reason.append("🌐 Generic domain")
 
-            bm["forgotten_score"] = "Yes" if forgotten else "No"
+            bm["forgotten_score"] = score_label
             bm["forgotten_score_reason"] = "; ".join(reason) if reason else "✅ Recent and descriptive"
             bm["days_old"] = days_old
 
