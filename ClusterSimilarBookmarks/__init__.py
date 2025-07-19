@@ -39,7 +39,7 @@ def format_response(clusters: List[List[Dict]]) -> List[Dict]:
     for idx, cluster in enumerate(clusters):
         for bm in cluster:
             bm_copy = bm.copy()
-            bm_copy["cluster_id"] = f"Group {idx + 1}"
+            bm_copy["cluster_group"] = f"Group {idx + 1}"
             response.append(bm_copy)
     return response
 
