@@ -19,7 +19,7 @@ def generate_summary(title, description):
     elif description:
         return clean_text(description), "📝 Used description"
     else:
-        return "⛔ MISSING", "⚠️ No title or description available"
+        return "N/A", "⚠️ No title or description available"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -57,3 +57,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
