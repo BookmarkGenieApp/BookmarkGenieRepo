@@ -185,7 +185,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     else:
     only_outliers = str(only_outliers_raw).strip().lower() in ("1", "true", "yes", "y")
 
-        min_conf = float(data.get("min_conf", 0.70))
+        try:
+            min_conf = float(data.get("min_conf", 0.70))
+        except Exception:
+            min_conf = 0.70
+
 
         for bm in bookmarks:
             # ✅ schema-flexible (works with your Flask rows too)
@@ -197,6 +201,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             if only_outliers and not hint_cat:
                 bm["smarter_folder"] = ""
                 bm["smarter_folder_reason"] = "Skipped (not an outlier)"
+                bm["smarter_folder_conf"] = 0.0
                 continue
 
             text_norm = normalize_text(title, desc, url)
@@ -217,6 +222,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.exception("Error in SmarterFolderSuggester")
         return func.HttpResponse(json.dumps({"error": str(e)}), mimetype="application/json", status_code=500)
+
 
 
 
