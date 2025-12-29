@@ -110,39 +110,107 @@ CATEGORIES = {
     }
 }
 
-def clean_text(text):
-    return re.findall(r"\b[a-z]{3,}\b", text.lower())
+# allow 2+ chars so "ai", "ev" etc survive
+_TOKEN_RE = re.compile(r"[a-z0-9]{2,}", re.I)
 
-def match_folder_category(text):
-    for category, subcats in CATEGORIES.items():
+def normalize_text(*parts: str) -> str:
+    raw = " ".join([p for p in parts if p])
+    raw = raw.lower()
+    # keep it simple: punctuation -> spaces
+    raw = re.sub(r"[^a-z0-9]+", " ", raw)
+    return " ".join(raw.split())
+
+def score_match(text_norm: str, tokens: set[str], keywords: list[str]) -> tuple[int, list[str]]:
+    """
+    Score:
+      +2 for phrase match ("wind power")
+      +1 for token match ("flight")
+    Return (score, matched_keywords)
+    """
+    score = 0
+    hits = []
+    for kw in keywords:
+        kw = kw.lower().strip()
+        if not kw:
+            continue
+        if " " in kw:
+            if kw in text_norm:
+                score += 2
+                hits.append(kw)
+        else:
+            if kw in tokens:
+                score += 1
+                hits.append(kw)
+    return score, hits
+
+def match_folder_category_scored(text_norm: str, hint_category: str | None = None):
+    tokens = set(_TOKEN_RE.findall(text_norm))
+
+    best = (None, None, 0, [])   # (parent, subcat, score, hits)
+    second_score = 0
+
+    cats = CATEGORIES.items()
+    if hint_category and hint_category in CATEGORIES:
+        cats = [(hint_category, CATEGORIES[hint_category])]
+
+    for parent, subcats in cats:
         for subcat, keywords in subcats.items():
-            for keyword in keywords:
-                if keyword in text:
-                    return subcat, f"Matched keyword '{keyword}' in {subcat} → {category}"
-    return None, "No strong match"
+            score, hits = score_match(text_norm, tokens, keywords)
+            if score > best[2]:
+                second_score = best[2]
+                best = (parent, subcat, score, hits)
+            elif score > second_score:
+                second_score = score
+
+    parent, subcat, score, hits = best
+    if score <= 0:
+        return None, "", 0.0, "No strong match"
+
+    # confidence similar to your Flask fast classifier style
+    margin = score - second_score
+    conf = 0.55 + 0.10 * score + 0.08 * max(0, margin)
+    conf = max(0.0, min(0.95, conf))
+
+    reason = f"score={score} conf={conf:.2f} hits={hits[:3]} parent={parent}"
+    return parent, subcat, conf, reason
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
         bookmarks = data.get("bookmarks") or data.get("urls") or []
+        only_outliers = bool(data.get("only_outliers", True))
+        min_conf = float(data.get("min_conf", 0.70))
 
         for bm in bookmarks:
-            title = bm.get("title", "")
-            description = bm.get("description", "")
-            combined_text = " ".join(clean_text(f"{title} {description}"))
-            subcat, reason = match_folder_category(combined_text)
-            bm["smarter_folder"] = subcat if subcat else ""
-            bm["smarter_folder_reason"] = reason
+            # ✅ schema-flexible (works with your Flask rows too)
+            url   = bm.get("url", "")
+            title = bm.get("title") or bm.get("url_content") or ""
+            desc  = bm.get("description", "")
+            hint_cat = (bm.get("suggested_category") or "").strip()
 
-        return func.HttpResponse(
-            json.dumps({"results": bookmarks}),
-            mimetype="application/json",
-            status_code=200
-        )
+            if only_outliers and not hint_cat:
+                bm["smarter_folder"] = ""
+                bm["smarter_folder_reason"] = "Skipped (not an outlier)"
+                continue
+
+            text_norm = normalize_text(title, desc, url)
+            parent, subcat, conf, reason = match_folder_category_scored(text_norm, hint_category=hint_cat or None)
+
+            if conf >= min_conf and subcat:
+                # ✅ keep existing field for merging
+                bm["smarter_folder"] = f"{parent} > {subcat}" if parent else subcat
+                bm["smarter_folder_reason"] = reason
+                bm["smarter_folder_conf"] = conf
+            else:
+                bm["smarter_folder"] = ""
+                bm["smarter_folder_reason"] = f"Below min_conf ({conf:.2f} < {min_conf:.2f})"
+                bm["smarter_folder_conf"] = conf
+
+        return func.HttpResponse(json.dumps({"results": bookmarks}), mimetype="application/json", status_code=200)
+
     except Exception as e:
         logging.exception("Error in SmarterFolderSuggester")
-        return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            mimetype="application/json",
-            status_code=500
-        )
+        return func.HttpResponse(json.dumps({"error": str(e)}), mimetype="application/json", status_code=500)
+
+
