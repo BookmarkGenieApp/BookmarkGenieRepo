@@ -179,23 +179,59 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
         bookmarks = data.get("bookmarks") or data.get("urls") or []
+
+        # --- Safety net: validate input early (avoid 500s) ---
+        if not isinstance(data, dict):
+            logging.error("Bad payload: req.get_json() did not return a dict")
+            return func.HttpResponse(
+                json.dumps({"error": "JSON body must be an object"}),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        if not isinstance(bookmarks, list):
+            logging.error(f"Bad payload: urls/bookmarks is {type(bookmarks).__name__}, value={str(bookmarks)[:200]}")
+            return func.HttpResponse(
+                json.dumps({
+                    "error": "urls/bookmarks must be a list",
+                    "got_type": type(bookmarks).__name__
+                }),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        # validate list items
+        bad = next((i for i, x in enumerate(bookmarks) if not isinstance(x, dict)), None)
+        if bad is not None:
+            logging.error(f"Bad payload: urls/bookmarks[{bad}] is {type(bookmarks[bad]).__name__}")
+            return func.HttpResponse(
+                json.dumps({
+                    "error": "Each item in urls/bookmarks must be an object",
+                    "bad_index": bad,
+                    "got_type": type(bookmarks[bad]).__name__
+                }),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        # --- parse flags and params ---
         only_outliers_raw = data.get("only_outliers", True)
-    if isinstance(only_outliers_raw, bool):
-        only_outliers = only_outliers_raw
-    else:
-    only_outliers = str(only_outliers_raw).strip().lower() in ("1", "true", "yes", "y")
+        if isinstance(only_outliers_raw, bool):
+            only_outliers = only_outliers_raw
+        else:
+            only_outliers = str(only_outliers_raw).strip().lower() in ("1", "true", "yes", "y")
 
         try:
             min_conf = float(data.get("min_conf", 0.70))
         except Exception:
             min_conf = 0.70
 
-
+        # --- main loop ---
         for bm in bookmarks:
             # ✅ schema-flexible (works with your Flask rows too)
-            url   = bm.get("url", "")
+            url = bm.get("url", "")
             title = bm.get("title") or bm.get("url_content") or ""
-            desc  = bm.get("description", "")
+            desc = bm.get("description", "")
             hint_cat = (bm.get("suggested_category") or "").strip()
 
             if only_outliers and not hint_cat:
@@ -205,7 +241,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 continue
 
             text_norm = normalize_text(title, desc, url)
-            parent, subcat, conf, reason = match_folder_category_scored(text_norm, hint_category=hint_cat or None)
+            parent, subcat, conf, reason = match_folder_category_scored(
+                text_norm, hint_category=hint_cat or None
+            )
 
             if conf >= min_conf and subcat:
                 # ✅ keep existing field for merging
@@ -217,12 +255,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 bm["smarter_folder_reason"] = f"Below min_conf ({conf:.2f} < {min_conf:.2f})"
                 bm["smarter_folder_conf"] = conf
 
-        return func.HttpResponse(json.dumps({"results": bookmarks}), mimetype="application/json", status_code=200)
+        return func.HttpResponse(
+            json.dumps({"results": bookmarks}),
+            mimetype="application/json",
+            status_code=200
+        )
 
     except Exception as e:
         logging.exception("Error in SmarterFolderSuggester")
-        return func.HttpResponse(json.dumps({"error": str(e)}), mimetype="application/json", status_code=500)
-
+        return func.HttpResponse(
+            json.dumps({"error": str(e)}),
+            mimetype="application/json",
+            status_code=500
+        )
 
 
 
