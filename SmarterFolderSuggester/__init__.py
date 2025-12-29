@@ -179,7 +179,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
         bookmarks = data.get("bookmarks") or data.get("urls") or []
-        only_outliers = bool(data.get("only_outliers", True))
+        only_outliers_raw = data.get("only_outliers", True)
+    if isinstance(only_outliers_raw, bool):
+        only_outliers = only_outliers_raw
+    else:
+    only_outliers = str(only_outliers_raw).strip().lower() in ("1", "true", "yes", "y")
+
         min_conf = float(data.get("min_conf", 0.70))
 
         for bm in bookmarks:
@@ -212,5 +217,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.exception("Error in SmarterFolderSuggester")
         return func.HttpResponse(json.dumps({"error": str(e)}), mimetype="application/json", status_code=500)
+
 
 
