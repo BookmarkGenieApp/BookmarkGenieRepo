@@ -3,28 +3,33 @@ import azure.functions as func
 import json
 
 GENERIC_TITLES = {"new tab", "untitled", "example page", "homepage", "home", "index", "default"}
-GENERIC_DESCRIPTIONS = {"n/a", "none", "no description", "", "...", "lorem ipsum"}
-
+GENERIC_DESCRIPTIONS = {"n/a", "none", "no description", ".", "lorem ipsum"}
 
 def is_generic_text(text, generic_set):
-    text = text.strip().lower()
-    return any(text == g or text.startswith(g) or g in text for g in generic_set)
-
+    text = (text or "").strip().lower()
+    for g in generic_set:
+        g = (g or "").strip().lower()
+        if not g:
+            continue  # critical: ignore empty patterns
+        if text == g or text.startswith(g) or (g in text):
+            return True
+    return False
 
 def evaluate_metadata(bookmark):
     title = bookmark.get("title", "").strip()
     description = bookmark.get("description", "").strip()
 
     title_flag = is_generic_text(title, GENERIC_TITLES)
-    desc_flag = is_generic_text(description, GENERIC_DESCRIPTIONS)
-    same_flag = title.lower() == description.lower() and title != ""
+    desc_missing = (description.strip() == "")
+    desc_flag = (not desc_missing) and is_generic_text(description, GENERIC_DESCRIPTIONS)
+    same_flag = (title != "" and description != "" and title.lower() == description.lower())
     short_flag = len(title.split()) <= 2 and not any(w in title.lower() for w in ["blog", "news", "guide", "tips"])
 
     reasons = []
     if title_flag:
         reasons.append("Generic or placeholder title")
     if desc_flag:
-        reasons.append("Generic or missing description")
+        reasons.append("Placeholder description")
     if same_flag:
         reasons.append("Description identical to title")
     if short_flag:
@@ -54,8 +59,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             broken, reason = evaluate_metadata(bm)
             bm.update({
                 "broken_metadata": broken,
-                "reason": reason
+                "broken_metadata_reason": reason
             })
+
             results.append(bm)
 
         return func.HttpResponse(
@@ -71,3 +77,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
