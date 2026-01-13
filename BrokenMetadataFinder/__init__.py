@@ -121,7 +121,7 @@ def evaluate_metadata(bookmark):
         score += 1
 
     # Decide: require at least 2 points to mark "Yes"
-    broken = "Yes" if score >= 2 else "No"
+    broken = "Yes" if score >= 2 else "-"
     return broken, "; ".join(reasons) if reasons else "Looks OK"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -161,3 +161,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
