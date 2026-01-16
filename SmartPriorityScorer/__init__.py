@@ -27,7 +27,7 @@ ARCHIVE_FOLDERS = ["archived", "old", "misc"]
 PRIORITY_LABELS = [
     (50, "🔥 High"),
     (10, "⚠️ Medium"),
-    (0,  "🧊 Low")
+    (0,  "❄️ Low")
 ]
 
 def keyword_score(title, description):
@@ -113,3 +113,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
