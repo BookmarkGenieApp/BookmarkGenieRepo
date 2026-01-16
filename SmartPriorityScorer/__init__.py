@@ -35,9 +35,11 @@ def keyword_score(title, description):
     score = 0
     reasons = []
     for keyword, weight in KEYWORD_WEIGHTS.items():
-        if keyword in text:
-            score += weight
-            reasons.append(f"Keyword '{keyword}' ({weight:+})")
+        count = text.count(keyword)
+        if count:
+            # Cap influence at 3 occurrences to avoid runaway scores
+            score += weight * min(count, 3)
+            reasons.append(f"{count}× '{keyword}' ({weight:+} each)")
     return score, reasons
 
 def folder_score(folder):
@@ -53,9 +55,9 @@ def recency_score(date_str):
         added_date = datetime.strptime(date_str, "%Y-%m-%d")
         days_old = (datetime.now() - added_date).days
         if days_old <= 365:
-            return 40, "Recent (< 1 year)"
+            return 30, "Recent (< 1 year)"
         elif days_old > 1825:
-            return -20, "Very old (> 5 years)"
+            return -15, "Very old (> 5 years)"
         else:
             return 0, "Moderately old"
     except:
@@ -95,7 +97,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             if rr:
                 reasons.append(rr)
 
-            total_score = max(0, min(100, total_score))
+            total_score = max(-20, min(100, total_score))
 
             bm["priority_score"] = label_priority(total_score)
             bm["priority_score_reason"] = "; ".join(reasons) or "No strong signals"
@@ -113,4 +115,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
 
