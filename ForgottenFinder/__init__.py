@@ -16,17 +16,24 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         for bm in bookmarks:
-            date_str = bm.get("date_added") or ""
             reason = []
             score_label = "✅ Recently Added"
             days_old = "⛔ MISSING"
 
+            date_str = str(bm.get("date_added") or "").strip()
+
             if date_str:
                 try:
-                    added_date = datetime.strptime(date_str, "%Y-%m-%d")
+                    # Accept either ISO "YYYY-MM-DD" or epoch seconds
+                    if date_str.isdigit():
+                        # Chrome/Firefox ADD_DATE is usually epoch seconds
+                        added_date = datetime.utcfromtimestamp(int(date_str))
+                    else:
+                        added_date = datetime.strptime(date_str, "%Y-%m-%d")
+            
                     delta = (datetime.utcnow() - added_date).days
                     days_old = delta
-
+            
                     if delta > 365 * 10:
                         score_label = "🕸️ Extremely Forgotten"
                         reason.append("📅 Added over 10 years ago")
@@ -38,9 +45,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         reason.append("📅 Added over 2 years ago")
                     else:
                         reason.append("📅 Added within 2 years")
+            
+                except Exception as e:
+                    reason.append(f"⚠️ Invalid date format: {date_str!r}")
 
-                except Exception:
-                    reason.append("⚠️ Invalid date format")
             else:
                 reason.append("⛔ No date provided")
 
@@ -69,3 +77,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
