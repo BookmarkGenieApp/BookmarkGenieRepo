@@ -35,7 +35,10 @@ def keyword_score(title, description):
     score = 0
     reasons = []
     for keyword, weight in KEYWORD_WEIGHTS.items():
-        count = text.count(keyword)
+        # Word-boundary match to avoid substring hits (e.g., "docs" in "products")
+        pattern = rf"\b{re.escape(keyword)}\b"
+        matches = re.findall(pattern, text)
+        count = len(matches)
         if count:
             # Cap influence at 3 occurrences to avoid runaway scores
             score += weight * min(count, 3)
@@ -43,9 +46,9 @@ def keyword_score(title, description):
     return score, reasons
 
 def folder_score(folder):
-    folder = folder.lower()
+    folder = (folder or "").lower()
     if folder in PRIORITY_FOLDERS:
-        return 20, f"Productivity folder: '{folder}'"
+        return 12, f"Productivity folder: '{folder}'"
     elif folder in ARCHIVE_FOLDERS:
         return -30, f"Archived folder: '{folder}'"
     return 0, ""
@@ -55,7 +58,7 @@ def recency_score(date_str):
         added_date = datetime.strptime(date_str, "%Y-%m-%d")
         days_old = (datetime.now() - added_date).days
         if days_old <= 365:
-            return 30, "Recent (< 1 year)"
+            return 28, "Recent (< 1 year)"
         elif days_old > 1825:
             return -15, "Very old (> 5 years)"
         else:
@@ -115,5 +118,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
 
 
