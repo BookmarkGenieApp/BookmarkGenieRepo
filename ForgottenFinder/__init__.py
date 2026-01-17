@@ -17,7 +17,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         for bm in bookmarks:
             reason = []
-            score_label = "✅ Recently Added"
+            score_label = "❓ Unknown (No date)"
             days_old = "⛔ MISSING"
 
             date_str = str(bm.get("date_added") or "").strip()
@@ -77,4 +77,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=500
         )
+
 
