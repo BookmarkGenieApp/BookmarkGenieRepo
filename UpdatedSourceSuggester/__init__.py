@@ -1,41 +1,110 @@
 import logging
-import azure.functions as func
 import json
 import re
 from datetime import datetime
 
-def extract_years(text):
-    return re.findall(r"(19|20)\\d{2}", text)
+import azure.functions as func
 
-def generate_suggestion(title):
+# Fast regexes (compiled once)
+YEAR_RE = re.compile(r"\b(19\d{2}|20\d{2})\b")
+URL_YEAR_RE = re.compile(r"(?:/|=)(19\d{2}|20\d{2})(?:/|&|$)")
+
+# A few high-signal, low-maintenance “outdated tech” hints (optional but useful)
+EOL_HINTS = [
+    ("python 2",  "Try searching for 'Python 3 tutorial'", "🐍 Mentions deprecated version"),
+    ("windows 7", "Try searching for 'Windows 11' (or latest support info)", "🪟 Mentions end-of-life OS"),
+    ("internet explorer", "Try searching for 'Microsoft Edge' equivalent", "🌐 Mentions retired browser"),
+]
+
+def _pick_url(bm: dict) -> str:
+    # tolerate common key variants
+    return (
+        (bm.get("url") or bm.get("Website Address") or bm.get("href") or bm.get("link") or "")
+        .strip()
+    )
+
+def _pick_title(bm: dict) -> str:
+    return (bm.get("title") or bm.get("Website Description") or bm.get("name") or "").strip()
+
+def _suggest_from_year(text: str, current_year: int):
+    years = [int(y) for y in YEAR_RE.findall(text or "")]
+    if not years:
+        return None
+    # treat "outdated" as older than current_year - 2
+    outdated = [y for y in years if y < current_year - 2]
+    if not outdated:
+        return None
+    y = max(outdated)
+    # Don't try to rewrite the whole title; just suggest a search query
+    clean = YEAR_RE.sub("", text).strip()
+    clean = " ".join(clean.split())
+    if clean:
+        return (f"Try searching for '{clean} {current_year}'",
+                f"📅 Mentions outdated year ({y})")
+    return (f"Try searching with year {current_year}",
+            f"📅 Mentions outdated year ({y})")
+
+def generate_suggestion(title: str, url: str):
     current_year = datetime.now().year
-    years = re.findall(r"\b(19\d{2}|20\d{2})\b", title)
-    if years:
-        outdated = [int(y) for y in years if int(y) < current_year - 2]
+    title_l = (title or "").lower()
+    url_s = (url or "").strip()
+
+    # 1) URL scheme hint (cheap + often valid)
+    if url_s.lower().startswith("http://"):
+        return (f"Try {re.sub(r'^http://', 'https://', url_s, flags=re.I)}",
+                "🔒 Uses http (https is usually preferred)")
+
+    # 2) Year heuristics (title first, then URL)
+    yr = _suggest_from_year(title or "", current_year)
+    if yr:
+        return yr
+
+    uyears = [int(y) for y in URL_YEAR_RE.findall(url_s)]
+    if uyears:
+        outdated = [y for y in uyears if y < current_year - 2]
         if outdated:
-            latest_year = max(outdated)
-            suggestion = re.sub(rf'\b{latest_year}\b', str(current_year), title)
-            return f"Try searching for '{suggestion}'", f"📅 Title mentions outdated year ({latest_year})"
-    if "python 2" in title.lower():
-        return "Try searching for 'Python 3 tutorial'", "🐍 Mentions deprecated version"
-    if "iphone 8" in title.lower():
-        return "Try searching for 'iPhone 14 review'", "📱 Mentions outdated device"
-    return "✅ Already up to date", "No outdated indicators"
+            y = max(outdated)
+            return (f"Try searching for a newer version ({current_year}) of this source",
+                    f"📅 URL contains outdated year ({y})")
+
+    # 3) Small set of deprecated-tech hints
+    for needle, suggestion, reason in EOL_HINTS:
+        if needle in title_l:
+            return suggestion, reason
+
+    # 4) No signal → return dash (keeps column useful)
+    return "-", ""
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
-        bookmarks = data.get("bookmarks", [])
-        results = []
 
-        for bm in bookmarks:
-            title = bm.get("title", "") or ""
-            suggestion, reason = generate_suggestion(title)
-            bm.update({
+        # ✅ Accept both keys (your global standard)
+        bookmarks = data.get("bookmarks") or data.get("urls") or []
+        if not isinstance(bookmarks, list):
+            bookmarks = []
+
+        results = []
+        for item in bookmarks:
+            # Allow either dict rows or raw URL strings
+            if isinstance(item, str):
+                bm = {"url": item, "title": ""}
+            elif isinstance(item, dict):
+                bm = item
+            else:
+                continue
+
+            url = _pick_url(bm)
+            title = _pick_title(bm)
+
+            suggestion, reason = generate_suggestion(title, url)
+
+            # ✅ Return minimal payload (faster + smaller)
+            results.append({
+                "url": url,
                 "updated_source_suggestion": suggestion,
                 "updated_source_reason": reason
             })
-            results.append(bm)
 
         return func.HttpResponse(
             json.dumps({"results": results}, ensure_ascii=False),
