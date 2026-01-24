@@ -14,7 +14,7 @@ import azure.functions as func
 PER_URL_TIMEOUT = 2.0  # seconds
 
 # Max redirects to follow per URL
-MAX_REDIRECTS = 3
+MAX_REDIRECTS = 0
 
 # Degree of parallelism when checking URLs
 MAX_WORKERS = 30
