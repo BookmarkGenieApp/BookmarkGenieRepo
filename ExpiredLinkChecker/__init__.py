@@ -11,13 +11,13 @@ import azure.functions as func
 # --- Config -------------------------------------------------------------------
 
 # Max time we allow for a single HTTP HEAD call
-PER_URL_TIMEOUT = 3.0  # seconds
+PER_URL_TIMEOUT = 2.0  # seconds
 
 # Max redirects to follow per URL
 MAX_REDIRECTS = 3
 
 # Degree of parallelism when checking URLs
-MAX_WORKERS = 20
+MAX_WORKERS = 30
 
 # Schemes we don't even try to check (non-web / hopeless)
 SKIP_SCHEMES = {
@@ -199,17 +199,70 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     results: List[Dict[str, Any]] = []
 
     try:
-        # Concurrency with predictable order (we consume futures in submit order)
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = [executor.submit(process_one, item) for item in input_items]
+        # --- DEDUPE: check each normalized URL once per invocation --------------------
+        order: List[tuple] = []          # (raw_url_str, norm_key, original_item)
+        seen: Dict[str, Any] = {}        # norm_key -> representative_item
+        unique_items: List[Any] = []
+        
+        for item in input_items:
+            raw_url = item.get("url") if isinstance(item, dict) else item
+            if not raw_url:
+                continue
+        
+            raw_url_str = str(raw_url)
+            norm = normalize_url(raw_url_str)
+            norm_key = norm or raw_url_str  # fallback
+        
+            order.append((raw_url_str, norm_key, item))
+        
+            if norm_key not in seen:
+                seen[norm_key] = item
+                unique_items.append(item)
+        
+        # Run checks only on unique_items
+        key_to_result: Dict[str, Dict[str, Any]] = {}
+        
+        def process_one_keyed(item: Any) -> Optional[tuple]:
+            url = item.get("url") if isinstance(item, dict) else item
+            if not url:
+                return None
+            raw_url_str = str(url)
+            norm = normalize_url(raw_url_str)
+            norm_key = norm or raw_url_str
+        
+            res = process_one(item)  # your existing logic
+            if res is None:
+                return None
+            return (norm_key, res)
+        
+        with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(unique_items) or 1)) as executor:
+            futures = [executor.submit(process_one_keyed, item) for item in unique_items]
             for fut in futures:
                 try:
-                    res = fut.result()
+                    out = fut.result()
                 except Exception:
                     logger.exception("Error processing URL in ExpiredLinkChecker")
-                    res = None
-                if res is not None:
-                    results.append(res)
+                    out = None
+                if out:
+                    k, r = out
+                    key_to_result[k] = r
+        
+        # Rebuild full results list in original order, preserving title/folder per row
+        for raw_url_str, norm_key, original_item in order:
+            base = key_to_result.get(norm_key)
+            if not base:
+                results.append(build_result(original_item, raw_url_str, None, False))
+                continue
+        
+            row = dict(base)
+            row["url"] = raw_url_str
+        
+            if isinstance(original_item, dict):
+                row["title"] = original_item.get("title", "") or ""
+                row["folder_name"] = original_item.get("folder_name", "") or ""
+        
+            results.append(row)
+
 
         return func.HttpResponse(
             json.dumps({"results": results}, ensure_ascii=False),
