@@ -11,7 +11,7 @@ import azure.functions as func
 # --- Config -------------------------------------------------------------------
 
 # Max time we allow for a single HTTP HEAD call
-PER_URL_TIMEOUT = 2.0  # seconds
+PER_URL_TIMEOUT = 1.2  # seconds
 
 # Max redirects to follow per URL
 MAX_REDIRECTS = 0
